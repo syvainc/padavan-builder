@@ -53,3 +53,21 @@ CSSEOF
         echo "anti-flicker patch applied to $CSS_FILE"
     fi
 done
+
+# === 5. Кастомный логотип ===
+LOGO_SRC="kimax.png"
+LOGO_DST="padavan-ng/trunk/user/www/n56u_ribbon_fixed/bootstrap/img/asus_logo.png"
+if [ -f "$LOGO_SRC" ]; then
+    cp "$LOGO_SRC" "$LOGO_DST"
+    echo "custom logo installed: $LOGO_SRC -> $LOGO_DST"
+    
+    # Копируем во все темы
+    for THEME_DIR in common-theme blue-theme grey-theme white-theme yellow-theme blue2-theme grey2-theme; do
+        THEME_LOGO="padavan-ng/trunk/user/www/n56u_ribbon_fixed/$THEME_DIR/img/asus_logo.png"
+        if [ -d "$(dirname "$THEME_LOGO")" ]; then
+            cp "$LOGO_SRC" "$THEME_LOGO" 2>/dev/null && echo "logo copied to $THEME_DIR"
+        fi
+    done
+else
+    echo "WARNING: custom_logo.png not found, using default ASUS logo"
+fi
