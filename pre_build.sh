@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# --- aria2 + веб-интерфейс, отключить Transmission ---
+# === 1. aria2 + веб-интерфейс, отключить Transmission ===
 sed -i 's/#CONFIG_FIRMWARE_INCLUDE_ARIA=y/CONFIG_FIRMWARE_INCLUDE_ARIA=y/' build.config
 sed -i 's/#CONFIG_FIRMWARE_INCLUDE_ARIA_WEB_CONTROL=y/CONFIG_FIRMWARE_INCLUDE_ARIA_WEB_CONTROL=y/' build.config
 sed -i 's/CONFIG_FIRMWARE_INCLUDE_TRANSMISSION=y/#CONFIG_FIRMWARE_INCLUDE_TRANSMISSION=y/' build.config
 
-# --- Партиции: переключить симлинк на 16 МБ ---
+# === 2. Партиции: 16 МБ flash ===
 PARTITIONS="padavan-ng/trunk/configs/boards/NEXX/WT3020H/partitions.config"
 if [ -L "$PARTITIONS" ]; then
     ln -sf ../../pt_ralink_16m.config "$PARTITIONS"
@@ -16,10 +16,40 @@ elif [ -f "$PARTITIONS" ]; then
     echo "partitions.config patched for 16M"
 fi
 
-# --- Ядро: включить 16 МБ flash ---
+# === 3. Ядро: 16 МБ flash ===
 KERNEL_CFG="padavan-ng/trunk/configs/boards/NEXX/WT3020H/kernel-3.4.x.config"
 if [ -f "$KERNEL_CFG" ]; then
     sed -i 's/# CONFIG_RT2880_FLASH_16M is not set/CONFIG_RT2880_FLASH_16M=y/' "$KERNEL_CFG"
     sed -i 's/CONFIG_RT2880_FLASH_8M=y/# CONFIG_RT2880_FLASH_8M is not set/' "$KERNEL_CFG"
     echo "kernel config patched for 16M"
 fi
+
+# === 4. Фикс мерцания: убираем CSS-переходы ===
+WWW_DIR="padavan-ng/trunk/user/www/n56u_ribbon_fixed"
+
+for CSS_FILE in "$WWW_DIR/bootstrap/css/main.css" \
+                "$WWW_DIR/common-theme/css/main.css" \
+                "$WWW_DIR/blue-theme/css/main.css" \
+                "$WWW_DIR/grey-theme/css/main.css" \
+                "$WWW_DIR/white-theme/css/main.css" \
+                "$WWW_DIR/yellow-theme/css/main.css" \
+                "$WWW_DIR/blue2-theme/css/main.css" \
+                "$WWW_DIR/grey2-theme/css/main.css"; do
+    if [ -f "$CSS_FILE" ]; then
+        sed -i 's/transition:/transition: none !important;\/\* disabled: /g' "$CSS_FILE"
+        sed -i 's/-webkit-transition:/-webkit-transition: none !important;\/\* disabled: /g' "$CSS_FILE"
+        
+        cat >> "$CSS_FILE" << 'CSSEOF'
+
+/* === Anti-flicker fix for Yandex Browser === */
+* {
+    -webkit-transition: none !important;
+    transition: none !important;
+    -webkit-animation: none !important;
+    animation: none !important;
+    will-change: auto !important;
+}
+CSSEOF
+        echo "anti-flicker patch applied to $CSS_FILE"
+    fi
+done
